@@ -62,12 +62,31 @@ public class Breakout extends GraphicsProgram {
 	/** Runs the Breakout program. */
 
 	public void run() {
-
+		
+		//* Initializing starting variables ** //
+		
+		turns = NTURNS;
+		totalbricks = (NBRICK_ROWS * NBRICKS_PER_ROW);
+		System.out.println(totalbricks);
+		startturn = true; 
+		gameover = false;
+		
+		//* setup game board** //
+		
 		setupBricks();
 		setupPaddle();
-		playBall();
-		while (NTURNS > 0 ){
-			checkBounce();
+		setupScoreboard();
+	
+		//* play game** //
+		
+		while (turns > 0 && gameover == false){
+			if (startturn == true) {
+				playBall();
+				startturn = false;
+				System.out.println(startturn);
+			}
+			checkWall();
+			checkCollision();
 			moveBall();
 		}
 
@@ -76,9 +95,9 @@ public class Breakout extends GraphicsProgram {
 	private void setupBricks() {
 
 
-		for (int rows = 0; rows < 10; rows++){
+		for (int rows = 0; rows < NBRICK_ROWS; rows++){
 
-			for (double bricknum = 0; bricknum < 10; bricknum++) {
+			for (double bricknum = 0; bricknum < NBRICKS_PER_ROW; bricknum++) {
 
 				brick = new GRect(BRICK_WIDTH, BRICK_HEIGHT);
 				brick.setFilled(true);
@@ -101,6 +120,7 @@ public class Breakout extends GraphicsProgram {
 					break;
 				}								
 				add(brick, ((getWidth() - WIDTH) / 2) + (bricknum * (BRICK_WIDTH + BRICK_SEP)),(BRICK_Y_OFFSET+(rows * (BRICK_SEP+BRICK_HEIGHT))));
+				totalbricks --;
 			}
 
 		}
@@ -113,11 +133,15 @@ public class Breakout extends GraphicsProgram {
 		paddle.setFilled(true);
 		add(paddle, (getWidth()-PADDLE_WIDTH) / 2, (getHeight() - PADDLE_Y_OFFSET));
 		paddlelastx = paddle.getX();
-		paddlelasty = paddle.getY();
 		addMouseListeners();
 
 	}
 
+	private void setupScoreboard() {
+		scoreboard = new GLabel("Turns Remaining: " + turns, 2,15);
+		add(scoreboard);
+	}
+	
 	// Called on mouse move to reposition the paddle
 	public void mouseMoved(MouseEvent e) {
 		if (e.getX()<=340){
@@ -128,7 +152,7 @@ public class Breakout extends GraphicsProgram {
 	}
 
 	private void playBall() {
-		ball = new GOval((WIDTH - (BALL_RADIUS / 2)) / 2, (HEIGHT - (BALL_RADIUS / 2)) / 2 , BALL_RADIUS,BALL_RADIUS);
+		ball = new GOval((WIDTH - BALL_RADIUS) / 2, (HEIGHT - BALL_RADIUS) / 2 , BALL_RADIUS,BALL_RADIUS);
 		ball.setFilled(true);
 		add(ball);
 		pause(500);
@@ -142,21 +166,19 @@ public class Breakout extends GraphicsProgram {
 	/** Update and move ball */
 
 	private void moveBall() {
-		lastballx = ball.getX();
-		lastbally = ball.getY();
 		ball.move(vx,vy);
 		pause(10);	
 		
 	}
 
-	private void checkBounce() {
+	private void checkWall() {
 		/* Checks if it hits Right Wall using x coord */
-		checkSideWall();
+		checkSideWalls();
 		checkTopWall();
-		CheckBottomWall();
+		checkBottomWall();
 	}
 	
-	private void checkSideWall() {
+	private void checkSideWalls() {
 		if ((ball.getX() + BALL_RADIUS) > APPLICATION_WIDTH || (ball.getX() < 0)) {
 			vx = -vx; //reverse direction on x axis
 		}	
@@ -168,60 +190,68 @@ public class Breakout extends GraphicsProgram {
 		}
 	}
 	
-	private void CheckBottomWall() {
-		if ((ball.getY() + BALL_RADIUS) > APPLICATION_HEIGHT) {
-			vy = -vy; //reverse direction on x axis
+	private void checkBottomWall() {
+		if ((ball.getY() + (BALL_RADIUS * 2)) > APPLICATION_HEIGHT) {
+			// vy = -vy; //reverse direction on x axis
+			turns-- ;
+			startturn = true;
+			remove(ball);
+			remove(scoreboard);
+			scoreboard = new GLabel("Turns Remaining: " + turns, 2,15);
+			add(scoreboard);
 		}
 	}	
-
-	private void checkForCollisions() {
-		hitPaddle();
-		hitBrick();
-
-	}
-	/** checks to see if UFO and bullet collide, if so
-	 * bullet and UFO are removed and both variables are
-	 * set to null.
-	 */
-	private void hitPaddle() {
-		GObject collPad = getElementAt(ball.getX(),ball.getY());
-		System.out.println("paddle: "+ paddle);
-		if (collPad == paddle) {
-			/* change direction method?? */
-			System.out.println("hitpaddle");
+	
+	private void checkCollision() {
+		GObject collider = getCollidingObject();
+		if (collider != null) {
+			if (collider == paddle) {
+				vy = -vy; //reverse direction to go up after hitting paddle
+			}
+			else {
+				
+				vy = -vy; //reverse direction to go down after hitting brick
+				remove(collider);
+			}
 		}
-
 	}
-
-	private void hitBrick() {
-		GObject collPad = getElementAt(ball.getX(),ball.getY());
-		System.out.println("brick: "+ brick);
-		if (collPad == brick) {
-			/* change direction method?? */
-			System.out.println("hitBrick");
+	
+	private GObject getCollidingObject() {
+		if (getElementAt(ball.getX(), ball.getY()) != null) {						//check top left of ball
+			return getElementAt(ball.getX(), ball.getY());
 		}
-
+		if (getElementAt(ball.getX() + (2 * BALL_RADIUS), ball.getY()) != null) {	//check top right of ball
+			return getElementAt(ball.getX() + (2 * BALL_RADIUS), ball.getY());
+		}
+		if (getElementAt(ball.getX(), ball.getY() + (2 * BALL_RADIUS)) != null) {	//check bottom left of ball
+			return getElementAt(ball.getX(), ball.getY() + (2 * BALL_RADIUS));
+		}
+		if (getElementAt(ball.getX() + (2 * BALL_RADIUS), ball.getY() + (2 * BALL_RADIUS)) != null) {	//check bottom left of ball
+			return getElementAt(ball.getX() + (2 * BALL_RADIUS), ball.getY() + (2 * BALL_RADIUS));
+		}
+		return null;
 	}
+		
+	
+		
 
 
 	/* private instance variables */
 	private GRect brick;
 	private GRect paddle;
 	private GOval ball;
-	private GRect collPad;
-	private GLabel gameover;
+	private GLabel scoreboard;
+	public GObject collider;
+	public GObject hit;
+	private boolean gameover;
 	private double paddlelastx;
-	private double paddlelasty;
 	private RandomGenerator rgen = RandomGenerator.getInstance();
 
 	/* used to make sure paddle is clicked and not a brick */
-	private GObject gobj;
 	private double vx, vy;
-	private double lastballx;
-	private double lastbally;
-
-
-
+	private int turns;
+	private int totalbricks;
+	private boolean startturn;
 
 
 
