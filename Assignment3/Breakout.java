@@ -57,86 +57,169 @@ public class Breakout extends GraphicsProgram {
 	/** Number of turns */
 	private static final int NTURNS = 3;
 
-	/** starting xcoord of column 1 */
-	private double xcoordstart = 0;
 
-	
-	private static final int RED = 1;
-	private static final int ORANGE = 3;
-	private static final int YELLOW = 5;
-	private static final int GREEN = 7;
-	private static final int CYAN = 9;
-	
-	
 	/* Method: run() */
 	/** Runs the Breakout program. */
-	
+
 	public void run() {
 
-		setup();
-
-	}
-
-	private void setup() {
-
-		/* use to help locate x,y coords DELETE when done*/
-		label = new GLabel("");
-		label.setFont("Times New Roman-36");
-		add(label, 50, 50);
-		// Must call this method to be able to get mouse events
-		addMouseListeners();
-		addRows();
-
-	}
-
-	// This method is called everytime user moves mouse
-	public void mouseMoved(MouseEvent e) {
-		label.setLabel("Mouse: (" + e.getX() + ", " + e.
-				getY() + ")");
-	}
-
-	/* method to start 2 rows of same color */ 
-	public void addRows() {
-			
-			for (int rows = 0; rows < 10; rows++){
-
-				for (double bricknum = 0; bricknum < 10; bricknum++) {
-					
-					brick = new GRect(BRICK_WIDTH, BRICK_HEIGHT);
-					brick.setFilled(true);
-					
-					switch (rows) {
-						case 0: case 1:
-							brick.setColor(Color.RED);
-							break;
-						case 2: case 3:
-							brick.setColor(Color.ORANGE);
-							break;
-						case 4: case 5:
-							brick.setColor(Color.YELLOW);
-							break;
-						case 6: case 7:
-							brick.setColor(Color.GREEN);
-							break;
-						case 8: case 9:
-							brick.setColor(Color.CYAN);
-							break;
-					}								
-					add(brick, ((getWidth() - WIDTH) / 2) + (bricknum * (BRICK_WIDTH + BRICK_SEP)),(BRICK_Y_OFFSET+(rows * (BRICK_SEP+BRICK_HEIGHT))));
-				}
-
-			}
+		setupBricks();
+		setupPaddle();
+		playBall();
+		while (NTURNS > 0 ){
+			checkBounce();
+			moveBall();
 		}
 
+	}
 
+	private void setupBricks() {
+
+
+		for (int rows = 0; rows < 10; rows++){
+
+			for (double bricknum = 0; bricknum < 10; bricknum++) {
+
+				brick = new GRect(BRICK_WIDTH, BRICK_HEIGHT);
+				brick.setFilled(true);
+
+				switch (rows) {
+				case 0: case 1:
+					brick.setColor(Color.RED);
+					break;
+				case 2: case 3:
+					brick.setColor(Color.ORANGE);
+					break;
+				case 4: case 5:
+					brick.setColor(Color.YELLOW);
+					break;
+				case 6: case 7:
+					brick.setColor(Color.GREEN);
+					break;
+				case 8: case 9:
+					brick.setColor(Color.CYAN);
+					break;
+				}								
+				add(brick, ((getWidth() - WIDTH) / 2) + (bricknum * (BRICK_WIDTH + BRICK_SEP)),(BRICK_Y_OFFSET+(rows * (BRICK_SEP+BRICK_HEIGHT))));
+			}
+
+		}
+	}
+
+
+	private void setupPaddle() {
+
+		paddle = new GRect(PADDLE_WIDTH, PADDLE_HEIGHT);
+		paddle.setFilled(true);
+		add(paddle, (getWidth()-PADDLE_WIDTH) / 2, (getHeight() - PADDLE_Y_OFFSET));
+		paddlelastx = paddle.getX();
+		paddlelasty = paddle.getY();
+		addMouseListeners();
+
+	}
+
+	// Called on mouse move to reposition the paddle
+	public void mouseMoved(MouseEvent e) {
+		if (e.getX()<=340){
+			paddle.move(e.getX() - paddlelastx,0);
+			paddlelastx = paddle.getX();	
+		}
+
+	}
+
+	private void playBall() {
+		ball = new GOval((WIDTH - (BALL_RADIUS / 2)) / 2, (HEIGHT - (BALL_RADIUS / 2)) / 2 , BALL_RADIUS,BALL_RADIUS);
+		ball.setFilled(true);
+		add(ball);
+		pause(500);
+		vx = rgen.nextDouble(1.0 , 3.0);
+		if (rgen.nextBoolean(0.5)) vx = -vx;
+		vy = 3.0;
+
+
+	}
+
+	/** Update and move ball */
+
+	private void moveBall() {
+		lastballx = ball.getX();
+		lastbally = ball.getY();
+		ball.move(vx,vy);
+		pause(10);	
+		
+	}
+
+	private void checkBounce() {
+		/* Checks if it hits Right Wall using x coord */
+		checkSideWall();
+		checkTopWall();
+		CheckBottomWall();
+	}
+	
+	private void checkSideWall() {
+		if ((ball.getX() + BALL_RADIUS) > APPLICATION_WIDTH || (ball.getX() < 0)) {
+			vx = -vx; //reverse direction on x axis
+		}	
+	}
+		
+	private void checkTopWall() {
+		if (ball.getY() < 0) {
+			vy = -vy; //reverse direction on x axis
+		}
+	}
+	
+	private void CheckBottomWall() {
+		if ((ball.getY() + BALL_RADIUS) > APPLICATION_HEIGHT) {
+			vy = -vy; //reverse direction on x axis
+		}
+	}	
+
+	private void checkForCollisions() {
+		hitPaddle();
+		hitBrick();
+
+	}
+	/** checks to see if UFO and bullet collide, if so
+	 * bullet and UFO are removed and both variables are
+	 * set to null.
+	 */
+	private void hitPaddle() {
+		GObject collPad = getElementAt(ball.getX(),ball.getY());
+		System.out.println("paddle: "+ paddle);
+		if (collPad == paddle) {
+			/* change direction method?? */
+			System.out.println("hitpaddle");
+		}
+
+	}
+
+	private void hitBrick() {
+		GObject collPad = getElementAt(ball.getX(),ball.getY());
+		System.out.println("brick: "+ brick);
+		if (collPad == brick) {
+			/* change direction method?? */
+			System.out.println("hitBrick");
+		}
+
+	}
 
 
 	/* private instance variables */
 	private GRect brick;
 	private GRect paddle;
 	private GOval ball;
-	private GLabel label;
-   
+	private GRect collPad;
+	private GLabel gameover;
+	private double paddlelastx;
+	private double paddlelasty;
+	private RandomGenerator rgen = RandomGenerator.getInstance();
+
+	/* used to make sure paddle is clicked and not a brick */
+	private GObject gobj;
+	private double vx, vy;
+	private double lastballx;
+	private double lastbally;
+
 
 
 
