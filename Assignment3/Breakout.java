@@ -55,7 +55,7 @@ public class Breakout extends GraphicsProgram {
 	private static final int BRICK_Y_OFFSET = 70;
 
 	/** Number of turns */
-	private static final int NTURNS = 3;
+	private static final int NTURNS = 5;
 
 
 	/* Method: run() */
@@ -70,22 +70,29 @@ public class Breakout extends GraphicsProgram {
 		System.out.println(totalbricks);
 		startturn = true; 
 		gameover = false;
-		
+				
 		//* setup game board** //
 		
+		turns--;
 		setupBricks();
 		setupPaddle();
 		setupScoreboard();
+
+		
 	
 		//* play game** //
+				
 		
-		while (turns > 0 && gameover == false){
+		while (turns >= 0 && checkWin() == false ) {
 			if (startturn == true) {
+				// starttext = new GLabel("Click mouse to start turn", WIDTH / 2, HEIGHT / 2);
+				// add(starttext);
+				updateScoreboard();
 				playBall();
 				startturn = false;
-				System.out.println(startturn);
 			}
-			checkWall();
+
+			checkWalls();
 			checkCollision();
 			moveBall();
 		}
@@ -120,12 +127,11 @@ public class Breakout extends GraphicsProgram {
 					break;
 				}								
 				add(brick, ((getWidth() - WIDTH) / 2) + (bricknum * (BRICK_WIDTH + BRICK_SEP)),(BRICK_Y_OFFSET+(rows * (BRICK_SEP+BRICK_HEIGHT))));
-				totalbricks --;
+				totalbricks ++;
 			}
 
 		}
 	}
-
 
 	private void setupPaddle() {
 
@@ -136,10 +142,20 @@ public class Breakout extends GraphicsProgram {
 		addMouseListeners();
 
 	}
-
 	private void setupScoreboard() {
-		scoreboard = new GLabel("Turns Remaining: " + turns, 2,15);
+		turnboard = new GLabel("Turns Remaining: " + turns, 8,15);
+		scoreboard= new GLabel("Bricks Remaining: " + totalbricks, WIDTH - 140,15);
 		add(scoreboard);
+		add(turnboard);
+	}
+	
+	private void updateScoreboard() {
+		remove(scoreboard);
+		remove(turnboard);
+		turnboard = new GLabel("Turns Remaining: " + turns, 8,15);
+		scoreboard= new GLabel("Bricks Remaining: " + totalbricks, WIDTH - 140,15);
+		add(scoreboard);
+		add(turnboard);
 	}
 	
 	// Called on mouse move to reposition the paddle
@@ -150,28 +166,20 @@ public class Breakout extends GraphicsProgram {
 		}
 
 	}
+	
 
 	private void playBall() {
 		ball = new GOval((WIDTH - BALL_RADIUS) / 2, (HEIGHT - BALL_RADIUS) / 2 , BALL_RADIUS,BALL_RADIUS);
 		ball.setFilled(true);
 		add(ball);
-		pause(500);
+		pause(700);
 		vx = rgen.nextDouble(1.0 , 3.0);
 		if (rgen.nextBoolean(0.5)) vx = -vx;
 		vy = 3.0;
-
-
 	}
 
-	/** Update and move ball */
 
-	private void moveBall() {
-		ball.move(vx,vy);
-		pause(10);	
-		
-	}
-
-	private void checkWall() {
+	private void checkWalls() {
 		/* Checks if it hits Right Wall using x coord */
 		checkSideWalls();
 		checkTopWall();
@@ -196,9 +204,7 @@ public class Breakout extends GraphicsProgram {
 			turns-- ;
 			startturn = true;
 			remove(ball);
-			remove(scoreboard);
-			scoreboard = new GLabel("Turns Remaining: " + turns, 2,15);
-			add(scoreboard);
+
 		}
 	}	
 	
@@ -212,9 +218,29 @@ public class Breakout extends GraphicsProgram {
 				
 				vy = -vy; //reverse direction to go down after hitting brick
 				remove(collider);
+				totalbricks --;
+				updateScoreboard();
 			}
 		}
 	}
+	
+	/** Update and move ball */
+	private void moveBall() {
+		ball.move(vx,vy);
+		pause(10);	
+		
+	}
+	
+	private boolean checkWin() {
+		if (totalbricks == 0) {
+			remove(scoreboard);
+			scoreboard = new GLabel("You WIN!!!!" , WIDTH / 2, HEIGHT / 2);
+			add(scoreboard);
+			return true;
+		}
+		return false;
+	}	
+	
 	
 	private GObject getCollidingObject() {
 		if (getElementAt(ball.getX(), ball.getY()) != null) {						//check top left of ball
@@ -240,7 +266,9 @@ public class Breakout extends GraphicsProgram {
 	private GRect brick;
 	private GRect paddle;
 	private GOval ball;
+	private GLabel turnboard;
 	private GLabel scoreboard;
+	private GLabel starttext;
 	public GObject collider;
 	public GObject hit;
 	private boolean gameover;
