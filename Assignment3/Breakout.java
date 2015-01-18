@@ -66,8 +66,6 @@ public class Breakout extends GraphicsProgram {
 		//* Initializing starting variables ** //
 		
 		turns = NTURNS;
-		totalbricks = (NBRICK_ROWS * NBRICKS_PER_ROW);
-		System.out.println(totalbricks);
 		startturn = true; 
 		gameover = false;
 				
@@ -83,20 +81,25 @@ public class Breakout extends GraphicsProgram {
 		//* play game** //
 				
 		
-		while (turns >= 0 && checkWin() == false ) {
+		while (turns >= 0) {
+			
 			if (startturn == true) {
 				// starttext = new GLabel("Click mouse to start turn", WIDTH / 2, HEIGHT / 2);
 				// add(starttext);
 				updateScoreboard();
 				playBall();
+				waitForClick();
 				startturn = false;
 			}
-
+			
 			checkWalls();
 			checkCollision();
 			moveBall();
-		}
+			checkWin();
 
+		}
+		showLose();
+		
 	}
 
 	private void setupBricks() {
@@ -164,15 +167,12 @@ public class Breakout extends GraphicsProgram {
 			paddle.move(e.getX() - paddlelastx,0);
 			paddlelastx = paddle.getX();	
 		}
-
 	}
 	
-
 	private void playBall() {
-		ball = new GOval((WIDTH - BALL_RADIUS) / 2, (HEIGHT - BALL_RADIUS) / 2 , BALL_RADIUS,BALL_RADIUS);
+		ball = new GOval((WIDTH / 2) - BALL_RADIUS, (HEIGHT / 2 )- BALL_RADIUS, BALL_RADIUS,BALL_RADIUS);
 		ball.setFilled(true);
 		add(ball);
-		pause(700);
 		vx = rgen.nextDouble(1.0 , 3.0);
 		if (rgen.nextBoolean(0.5)) vx = -vx;
 		vy = 3.0;
@@ -210,12 +210,14 @@ public class Breakout extends GraphicsProgram {
 	
 	private void checkCollision() {
 		GObject collider = getCollidingObject();
+		AudioClip bounceClip = MediaTools.loadAudioClip("bounce.au");
 		if (collider != null) {
 			if (collider == paddle) {
+                bounceClip.play();
 				vy = -vy; //reverse direction to go up after hitting paddle
 			}
 			else {
-				
+                bounceClip.play();
 				vy = -vy; //reverse direction to go down after hitting brick
 				remove(collider);
 				totalbricks --;
@@ -230,16 +232,6 @@ public class Breakout extends GraphicsProgram {
 		pause(10);	
 		
 	}
-	
-	private boolean checkWin() {
-		if (totalbricks == 0) {
-			remove(scoreboard);
-			scoreboard = new GLabel("You WIN!!!!" , WIDTH / 2, HEIGHT / 2);
-			add(scoreboard);
-			return true;
-		}
-		return false;
-	}	
 	
 	
 	private GObject getCollidingObject() {
@@ -258,7 +250,39 @@ public class Breakout extends GraphicsProgram {
 		return null;
 	}
 		
+	private void showLose() {
+		AudioClip youLose = MediaTools.loadAudioClip("you_lose_sound_effect.wav");
+		GLabel win = new GLabel("SORRY!! You LOSE!");
+		win.setFont("Times New Roman-22");
+		win.setColor(Color.RED);
+		double w = win.getWidth();
+		double h = win.getAscent();
+		add(win, (WIDTH - w) / 2, (HEIGHT - h) / 2);
+		GLabel score = new GLabel("Total Score: " + ((NBRICKS_PER_ROW * NBRICK_ROWS) - totalbricks));
+		score.setFont("-BOLD-16");
+		double w2 = score.getWidth();
+		double h2 = score.getAscent();
+		add(score, (WIDTH - w2) / 2, ((HEIGHT - h2) / 2) + (HEIGHT / 4));
+		youLose.play();
+
+	}
 	
+	private void checkWin() {
+		if (totalbricks == 0) {
+			GLabel win = new GLabel("CONGRATS!! You Won!");
+			win.setFont("Times New Roman-22");
+			win.setColor(Color.GREEN);
+			double w = win.getWidth();
+			double h = win.getAscent();
+			add(win, (WIDTH - w) / 2, (HEIGHT - h) / 2);
+			GLabel score = new GLabel("Total Score: " + totalbricks);
+			score.setFont("-BOLD-16");
+			double w2 = score.getWidth();
+			double h2 = score.getAscent();
+			add(score, (WIDTH - w2) / 2, ((HEIGHT - h2) / 2) + (HEIGHT / 4));
+
+			}
+	}	
 		
 
 
@@ -280,8 +304,5 @@ public class Breakout extends GraphicsProgram {
 	private int turns;
 	private int totalbricks;
 	private boolean startturn;
-
-
-
 
 }
